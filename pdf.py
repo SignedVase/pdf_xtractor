@@ -32,11 +32,4 @@ class Pdf:
 
 
     def extract(self):
-        pdf = pdfplumber.open(self.file)
-        try:
-            self.ext_txt(pdf)
-        except:
-            print('Deu erro')
-
-        pdf.close()
         pass
