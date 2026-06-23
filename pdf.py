@@ -55,11 +55,14 @@ class Pdf:
     @staticmethod
     def _ext_txt(arq:mpdf.Document):
         """
-        Extracts text from each page of a PDF.
+        Extracts text from each page of a PDF document.
 
-        :param arq: A pdfplumber PDF object.
-        :return: A list of strings, one for each page of the PDF.
+        :param arq: A PyMuPDF Document object.
+        :type arq: mpdf.Document
+        :return: A list of strings, where each item contains the text of one PDF page.
+        :rtype: list[str]
         """
+
         pages = []
         for page in arq:
             txt = page.get_text()
