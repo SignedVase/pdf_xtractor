@@ -1,16 +1,44 @@
 from pathlib import Path
 import pymupdf as mpdf
+import io
+from PIL import Image
+import pytesseract
+
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
 class Pdf:
     def __init__(self, file:Path):
-        self.file = file
+        self._file = file
 
 
-
-    def is_scan(self):
+    def _is_scan(self):
         pass
 
     @staticmethod
-    def ext_txt(arq:mpdf.Document):
+    def _rotate(pdf:mpdf.Document):
+            for page in pdf:
+                rotate:int = page.rotation
+
+                pix = page.get_pixmap(dpi=200)
+                img = Image.open(io.BytesIO(pix.tobytes("png")))
+                try:
+                    osd = pytesseract.image_to_osd(img, lang='osd', config="--psm 0")
+                except Exception as e:
+                    osd = None
+                    print(f'Erro: {e}')
+                if osd is not None:
+                    rotate_osd = osd.split('Rotate:')[1].split('\n')[0].strip()
+
+
+                    if int(rotate_osd) != 0 and int(rotate) != 0:
+                        page.set_rotation(0)
+
+                    if int(rotate_osd) != int(rotate) and int(rotate) == 0:
+                        page.set_rotation(int(rotate_osd))
+
+
+    @staticmethod
+    def _ext_txt(arq:mpdf.Document):
         """
         Extracts text from each page of a PDF.
 
@@ -24,16 +52,15 @@ class Pdf:
         return pages
 
 
-    def ext_img(self):
-        pass
-
-    def rotate(self):
+    def _ext_img(self):
         pass
 
 
-    def extract(self):
-        pass
-        # pdf = mpdf.open(self.file)
-        # for page in pdf:
-        #     print(page.xref)
-        # print(self.ext_txt(pdf))
+
+
+    def extract(self, rotate:bool=True):
+        pdf = mpdf.open(self._file)
+        if rotate:
+            self._rotate(pdf)
+            pdf.saveIncr()
+        pdf.close()
