@@ -42,14 +42,14 @@ class Pdf:
                     osd = None
                     print(f'Erro: {e}')
                 if osd is not None:
-                    rotate_osd = osd.split('Rotate:')[1].split('\n')[0].strip()
+                    rotate_osd = int(osd.split('Rotate:')[1].split('\n')[0].strip())
 
 
-                    if int(rotate_osd) != 0 and int(rotate) != 0:
+                    if rotate_osd != 0 and rotate != 0:
                         page.set_rotation(0)
 
-                    if int(rotate_osd) != int(rotate) and int(rotate) == 0:
-                        page.set_rotation(int(rotate_osd))
+                    if rotate_osd != rotate and rotate == 0:
+                        page.set_rotation(rotate_osd)
 
 
     @staticmethod
