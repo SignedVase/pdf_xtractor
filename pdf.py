@@ -1,5 +1,5 @@
 from pathlib import Path
-import pdfplumber
+import pymupdf as mpdf
 class Pdf:
     def __init__(self, file:Path):
         self.file = file
@@ -10,7 +10,7 @@ class Pdf:
         pass
 
     @staticmethod
-    def ext_txt(arq:pdfplumber.PDF):
+    def ext_txt(arq:mpdf.Document):
         """
         Extracts text from each page of a PDF.
 
@@ -18,8 +18,8 @@ class Pdf:
         :return: A list of strings, one for each page of the PDF.
         """
         pages = []
-        for page in arq.pages:
-            txt = page.extract_text()
+        for page in arq:
+            txt = page.get_text()
             pages.append(txt)
         return pages
 
@@ -33,3 +33,7 @@ class Pdf:
 
     def extract(self):
         pass
+        # pdf = mpdf.open(self.file)
+        # for page in pdf:
+        #     print(page.xref)
+        # print(self.ext_txt(pdf))
