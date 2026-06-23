@@ -16,7 +16,22 @@ class Pdf:
 
     @staticmethod
     def _rotate(pdf:mpdf.Document):
-            for page in pdf:
+
+        """
+        Detects and corrects the rotation of each page in a PDF document.
+
+        This method renders each PDF page as an image and uses Tesseract OSD
+        (Orientation and Script Detection) to identify the visual rotation of
+        the page. If the detected orientation differs from the page's current
+        rotation metadata, the page rotation is adjusted accordingly.
+
+        :param pdf: A PyMuPDF Document object whose pages will be checked and rotated.
+        :type pdf: mpdf.Document
+        :return: None. The PDF document is modified in place.
+        :rtype: None
+        """
+
+        for page in pdf:
                 rotate:int = page.rotation
 
                 pix = page.get_pixmap(dpi=200)
