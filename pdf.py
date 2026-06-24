@@ -108,7 +108,7 @@ class Pdf:
         return pages
 
 
-    def _ext_img(self):
+    def _ext_ocr(self):
         pass
 
 
