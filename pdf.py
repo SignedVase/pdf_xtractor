@@ -3,6 +3,8 @@ import pymupdf as mpdf
 import io
 from PIL import Image
 import pytesseract
+from pypdf import PdfReader
+from pypdf.generic import ContentStream
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
@@ -12,7 +14,43 @@ class Pdf:
 
 
     def _is_scan(self):
-        pass
+        TEXT_OPERATORS = {
+            b"Tj",
+            b"TJ",
+            b"'",
+            b'"',
+        }
+
+        reader = PdfReader(self._file)
+
+        ocr = []
+        txt = []
+        for index, page in enumerate(reader.pages, start=1):
+            if "/Font" in page.get("/Resources", {}):
+                contents = page.get_contents()
+
+                if contents is None:
+                    continue
+
+                content_stream = ContentStream(contents, reader)
+
+                for operands, operator in content_stream.operations:
+                    if operator  in TEXT_OPERATORS:
+                        txt.append(index)
+                        break
+                if index not in txt and index not in ocr:
+                    ocr.append(index)
+            else:
+                ocr.append(index)
+
+
+        reader.close()
+
+        if ocr:
+            return True, ocr
+        else:
+            return False, None
+
 
     @staticmethod
     def _rotate(pdf:mpdf.Document):
@@ -77,8 +115,11 @@ class Pdf:
 
 
     def extract(self, rotate:bool=True):
-        pdf = mpdf.open(self._file)
-        if rotate:
-            self._rotate(pdf)
-            pdf.saveIncr()
-        pdf.close()
+        pass
+        # var, ocr_pg_idx = self._is_scan()
+        # pdf = mpdf.open(self._file)
+        # if rotate:
+        #     self._rotate(pdf)
+        #     pdf.saveIncr()
+        # pdf.close()
+        # print(var, ocr_pg_idx)
