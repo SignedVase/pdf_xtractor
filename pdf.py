@@ -1,9 +1,10 @@
+import shutil
 from pathlib import Path
 import pymupdf as mpdf
 import io
-from PIL import Image
+from PIL import Image, ImageOps
 import pytesseract
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 from pypdf.generic import ContentStream
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -108,8 +109,109 @@ class Pdf:
         return pages
 
 
-    def _ext_ocr(self):
-        pass
+    @staticmethod
+    def _ext_ocr(pdf:mpdf.Document , arq: Path, ocr_idx:list[int]) -> tuple[dict[int,str], Path]:
+        src = pdf
+        border_px = 40
+
+        config = (
+            "--oem 1 --psm 6 --dpi 300 "
+            "-c preserve_interword_spaces=1"
+        )
+
+        output_path = arq.with_name(f"{arq.stem}_ocr{arq.suffix}")
+
+
+        out = mpdf.open()
+        txt_ocr = {}
+
+        for idx in range(src.page_count):
+            page = src.load_page(idx)
+
+            if idx not in ocr_idx:
+                out.insert_pdf(src, from_page=idx, to_page=idx)
+                continue
+
+            original_rect = page.rect
+
+            # Renderiza a página original
+            pix = page.get_pixmap(dpi=300, alpha=False)
+            image = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+
+            original_w, original_h = image.size
+
+            # Aqui você mantém a borda preta para ajudar o OCR
+            image_with_border = ImageOps.expand(
+                image,
+                border=border_px,
+                fill="black"
+            )
+
+            expanded_w, expanded_h = image_with_border.size
+
+            txt = pytesseract.image_to_string(
+                image=image_with_border,
+                lang="por",
+                config=config
+            )
+
+            if isinstance(txt, bytes):
+                txt = txt.decode("utf-8", errors="replace")
+            txt_ocr.update({idx: txt})
+
+            # Gera PDF pesquisável com a imagem COM borda
+            pdf_bytes = pytesseract.image_to_pdf_or_hocr(
+                image=image_with_border,
+                extension="pdf",
+                lang="por",
+                config=config
+            )
+
+            ocr_doc = mpdf.open(stream=pdf_bytes, filetype="pdf")
+            ocr_page = ocr_doc[0]
+
+            # Calcula, no sistema de coordenadas do PDF gerado pelo Tesseract,
+            # qual área corresponde à página original sem a borda
+            ocr_rect = ocr_page.rect
+
+            clip = mpdf.Rect(
+                border_px / expanded_w * ocr_rect.width,
+                border_px / expanded_h * ocr_rect.height,
+                (border_px + original_w) / expanded_w * ocr_rect.width,
+                (border_px + original_h) / expanded_h * ocr_rect.height,
+            )
+
+            # Cria uma página final com o mesmo tamanho da página original
+            fixed_doc = mpdf.open()
+            fixed_page = fixed_doc.new_page(
+                width=original_rect.width,
+                height=original_rect.height
+            )
+
+            # Insere apenas a parte útil do PDF OCR,
+            # descartando visualmente a borda preta
+            fixed_page.show_pdf_page(
+                fixed_page.rect,
+                ocr_doc,
+                0,
+                clip=clip,
+                keep_proportion=False
+            )
+
+            out.insert_pdf(fixed_doc, from_page=0, to_page=0)
+
+            ocr_doc.close()
+            fixed_doc.close()
+
+        out.save(output_path, garbage=4, deflate=True)
+        out.close()
+        backup = Path(f"{arq.parent}/originais")
+        backup.mkdir(exist_ok=True)
+        if not (backup / arq.name).exists():
+            shutil.move(arq, backup)
+        return txt_ocr, output_path
+
+
 
 
 
