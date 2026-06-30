@@ -179,13 +179,11 @@ class Pdf:
 
             original_rect = page.rect
 
-            # Renderiza a página original
             pix = page.get_pixmap(dpi=300, alpha=False)
             image = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
 
             original_w, original_h = image.size
 
-            # Aqui você mantém a borda preta para ajudar o OCR
             image_with_border = ImageOps.expand(
                 image,
                 border=border_px,
@@ -204,7 +202,6 @@ class Pdf:
                 txt = txt.decode("utf-8", errors="replace")
             txt_ocr.update({idx: txt})
 
-            # Gera PDF pesquisável com a imagem COM borda
             pdf_bytes = pytesseract.image_to_pdf_or_hocr(
                 image=image_with_border,
                 extension="pdf",
@@ -215,8 +212,6 @@ class Pdf:
             ocr_doc = mpdf.open(stream=pdf_bytes, filetype="pdf")
             ocr_page = ocr_doc[0]
 
-            # Calcula, no sistema de coordenadas do PDF gerado pelo Tesseract,
-            # qual área corresponde à página original sem a borda
             ocr_rect = ocr_page.rect
 
             clip = mpdf.Rect(
@@ -226,15 +221,12 @@ class Pdf:
                 (border_px + original_h) / expanded_h * ocr_rect.height,
             )
 
-            # Cria uma página final com o mesmo tamanho da página original
             fixed_doc = mpdf.open()
             fixed_page = fixed_doc.new_page(
                 width=original_rect.width,
                 height=original_rect.height
             )
 
-            # Insere apenas a parte útil do PDF OCR,
-            # descartando visualmente a borda preta
             fixed_page.show_pdf_page(
                 fixed_page.rect,
                 ocr_doc,
