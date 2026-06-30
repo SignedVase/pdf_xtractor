@@ -101,7 +101,7 @@ class Pdf:
 
 
     @staticmethod
-    def _ext_txt(arq:mpdf.Document, idx:list) -> dict[int,str]|dict:
+    def _ext_txt(arq:mpdf.Document, idx:list) -> dict[int,str]:
         """
         Extracts native text from the pages of a PDF document.
 
