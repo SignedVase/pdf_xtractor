@@ -10,11 +10,11 @@ from pypdf.generic import ContentStream
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class Pdf:
-    def __init__(self, file:Path):
+    def __init__(self, file:Path) -> None:
         self._file = file
 
 
-    def _is_scan(self):
+    def _is_scan(self) ->  list[int]|list[None]:
         TEXT_OPERATORS = {
             b"Tj",
             b"TJ",
@@ -26,7 +26,7 @@ class Pdf:
 
         ocr = []
         txt = []
-        for index, page in enumerate(reader.pages, start=1):
+        for index, page in enumerate(reader.pages):
             if "/Font" in page.get("/Resources", {}):
                 contents = page.get_contents()
 
@@ -47,14 +47,11 @@ class Pdf:
 
         reader.close()
 
-        if ocr:
-            return True, ocr
-        else:
-            return False, None
+        return ocr
 
 
     @staticmethod
-    def _rotate(pdf:mpdf.Document):
+    def _rotate(pdf:mpdf.Document) -> None:
 
         """
         Detects and corrects the rotation of each page in a PDF document.
@@ -92,20 +89,21 @@ class Pdf:
 
 
     @staticmethod
-    def _ext_txt(arq:mpdf.Document):
+    def _ext_txt(arq:mpdf.Document, idx:list) -> dict[int,str]|dict:
         """
         Extracts text from each page of a PDF document.
 
         :param arq: A PyMuPDF Document object.
         :type arq: mpdf.Document
         :return: A list of strings, where each item contains the text of one PDF page.
-        :rtype: list[str]
+        :rtype: dict{int:str}
         """
 
-        pages = []
-        for page in arq:
-            txt = page.get_text()
-            pages.append(txt)
+        pages = {}
+        for index, page in enumerate(arq.pages()):
+            if not idx or index not in idx:
+                txt = page.get_text()
+                pages.update({index:txt})
         return pages
 
 
@@ -205,10 +203,10 @@ class Pdf:
 
         out.save(output_path, garbage=4, deflate=True)
         out.close()
-        backup = Path(f"{arq.parent}/originais")
+        backup = Path(f"{arq.parent}/OCR")
         backup.mkdir(exist_ok=True)
-        if not (backup / arq.name).exists():
-            shutil.move(arq, backup)
+        if not (backup / output_path.name).exists():
+            shutil.move(output_path, backup)
         return txt_ocr, output_path
 
 
@@ -216,12 +214,29 @@ class Pdf:
 
 
 
-    def extract(self, rotate:bool=True):
-        pass
-        # var, ocr_pg_idx = self._is_scan()
-        # pdf = mpdf.open(self._file)
-        # if rotate:
-        #     self._rotate(pdf)
-        #     pdf.saveIncr()
-        # pdf.close()
-        # print(var, ocr_pg_idx)
+    def extract(self, rotate :bool=True, only_ocr :bool=False):
+        pdf = mpdf.open(self._file)
+        textos = {}
+
+        if rotate:
+            self._rotate(pdf)
+            pdf.saveIncr()
+
+        if only_ocr:
+            ocr_pg_idx = [pg for pg in range(pdf.page_count)]
+            textos, path =self._ext_ocr(pdf, self._file, ocr_pg_idx)
+
+        if not only_ocr:
+            ocr_pg_idx = self._is_scan()
+
+            if ocr_pg_idx:
+                dict_txt = self._ext_txt(pdf, ocr_pg_idx)
+                dict_ocr, path = self._ext_ocr(pdf, self._file, ocr_pg_idx)
+                textos = dict(sorted((dict_txt | dict_ocr).items()))
+            else:
+                textos = self._ext_txt(pdf, ocr_pg_idx)
+
+        pdf.close()
+
+        return textos
+
