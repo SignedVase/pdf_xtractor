@@ -103,12 +103,21 @@ class Pdf:
     @staticmethod
     def _ext_txt(arq:mpdf.Document, idx:list) -> dict[int,str]|dict:
         """
-        Extracts text from each page of a PDF document.
+        Extracts native text from the pages of a PDF document.
+
+        This method iterates through the PDF pages and extracts text only from pages
+        that are not listed in ``idx``. If ``idx`` is empty, text is extracted from all
+        pages.
 
         :param arq: A PyMuPDF Document object.
         :type arq: mpdf.Document
-        :return: A list of strings, where each item contains the text of one PDF page.
-        :rtype: dict{int:str}
+        :param idx: A list of zero-based page indexes that should be skipped during
+                    native text extraction, usually because they will be processed
+                    with OCR.
+        :type idx: list[int]
+        :return: A dictionary where each key is a zero-based page index and each value
+                 is the extracted native text from that page.
+        :rtype: dict[int, str]
         """
 
         pages = {}
