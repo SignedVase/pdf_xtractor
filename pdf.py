@@ -121,6 +121,32 @@ class Pdf:
 
     @staticmethod
     def _ext_ocr(pdf:mpdf.Document , arq: Path, ocr_idx:list[int]) -> tuple[dict[int,str], Path]:
+        """
+        Applies OCR to selected pages of a PDF document and creates a searchable PDF copy.
+
+        This method processes only the pages whose indexes are present in ``ocr_idx``.
+        Pages not listed in ``ocr_idx`` are copied directly to the output document without
+        OCR. For OCR pages, the method renders the page as an image, adds a black border
+        to improve text recognition, extracts the text using Tesseract, and creates a
+        searchable PDF page. The added border is clipped out visually so that the final
+        page keeps the original page size and appearance.
+
+        The generated searchable PDF is saved with the suffix ``_ocr`` added to the
+        original file name. The output file is then moved to an ``OCR`` folder inside
+        the original file's parent directory if a file with the same name does not
+        already exist there.
+
+        :param pdf: A PyMuPDF Document object containing the source PDF pages.
+        :type pdf: mpdf.Document
+        :param arq: The original PDF file path used to generate the output file name.
+        :type arq: Path
+        :param ocr_idx: A list of zero-based page indexes that should be processed with OCR.
+        :type ocr_idx: list[int]
+        :return: A tuple containing a dictionary with the extracted OCR text by page index
+         and the final path of the generated OCR PDF file.
+        :rtype: tuple[dict[int, str], Path]
+        """
+
         src = pdf
         border_px = 40
 
@@ -217,9 +243,10 @@ class Pdf:
         out.close()
         backup = Path(f"{arq.parent}/OCR")
         backup.mkdir(exist_ok=True)
-        if not (backup / output_path.name).exists():
+        final_path = backup / output_path.name
+        if not final_path.exists():
             shutil.move(output_path, backup)
-        return txt_ocr, output_path
+        return txt_ocr, final_path
 
 
 
