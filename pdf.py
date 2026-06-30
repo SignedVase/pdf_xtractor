@@ -253,7 +253,28 @@ class Pdf:
 
 
 
-    def extract(self, rotate :bool=True, only_ocr :bool=False):
+    def extract(self, rotate :bool=True, only_ocr :bool=False) -> dict[int, str]:
+        """
+        Extracts text from a PDF document using native text extraction and/or OCR.
+
+        This method opens the PDF file, optionally corrects page rotation, and extracts
+        text from the document. By default, it detects which pages are likely scanned
+        or image-based and applies OCR only to those pages, while extracting native text
+        from the remaining pages. If ``only_ocr`` is enabled, OCR is applied to every
+        page of the PDF.
+
+        When ``rotate`` is enabled, the PDF pages may be rotated in place before text
+        extraction, and the changes are saved incrementally to the original file.
+
+        :param rotate: Whether to detect and correct page rotation before extraction.
+        :type rotate: bool
+        :param only_ocr: Whether to force OCR extraction on all pages instead of mixing
+                         native text extraction and OCR.
+        :type only_ocr: bool
+        :return: A dictionary containing the extracted text, where each key is a
+                 zero-based page index and each value is the extracted page text.
+        :rtype: dict[int, str]
+        """
         pdf = mpdf.open(self._file)
         textos = {}
 
