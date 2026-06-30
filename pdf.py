@@ -4,7 +4,7 @@ import pymupdf as mpdf
 import io
 from PIL import Image, ImageOps
 import pytesseract
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfReader
 from pypdf.generic import ContentStream
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
