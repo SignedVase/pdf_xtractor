@@ -14,7 +14,19 @@ class Pdf:
         self._file = file
 
 
-    def _is_scan(self) ->  list[int]|list[None]:
+    def _is_scan(self) ->  list[int]:
+        """
+        Identifies PDF pages that likely require OCR processing.
+
+        This method analyzes each page of the PDF and checks whether it contains
+        font resources and native PDF text operators in its content stream. Pages
+        without font resources, without content, or without detectable text
+        operators are considered scanned or image-based pages and are marked for
+        OCR.
+
+        :return: A list of zero-based page indexes that likely require OCR.
+        :rtype: list[int]
+        """
         TEXT_OPERATORS = {
             b"Tj",
             b"TJ",
